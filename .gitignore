@@ -1,1 +1,6 @@
 groovy-all-2.2.1.jar
+# History files
+.Rhistory
+
+# Example code in package build process
+*-Ex.R
