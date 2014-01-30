@@ -1,6 +1,6 @@
-%let token1=CAAFB5Vaz8uYBAPC7u5C2XIf3Wd7VRZA2bLei2dDzVGKrGsAtc5i9MZBXHFHuBBhBg;
-%let token2=kqChXI6swLgkKlR9EE56Jw49sM66ZBisF4rzCHfAEq27lNcpi0xQPIzu4dLciDD9QW;
-%let token3=BdiZB68ZBZBLm8o0ZBrfpCdqDg6RECZCUYK5lCMWomd1bblJwb6UlNBCaRNXSg78ZD;
+%let token1=CAAFB5Vaz8uYBAK9fZAZAEVOwkai29WwGyZC2xEwSAXwWOhIEPQ6FakD78txVwdO9L;
+%let token2=fwqSQfLFxqMsM0dJPFsD7pYhkeqPnCP8jJKZAZAkWDZBYh06ri1niIygEOSvQGTasN;
+%let token3=4AyvGj9jslOZCg8z9wMEntFYOf5KBzlxJap1HU9nXoPuD19cx6UCS7zNzrJ45tYZD;
 %let token=&token1.&token2.&token3;
 
 filename out "c:\temp\out.txt";
@@ -13,11 +13,14 @@ proc http
 ;
 run;
 
-proc groovy;
+proc groovy classpath="C:\git_local\SGFPaper2014\groovy-all-2.2.1.jar";
 	submit;
         import groovy.json.*
         def input=new File('c:/temp/out.txt').text
         def output = new JsonSlurper().parseText(input)
-        println output    
+        output.statuses.data.each {
+			println it.message
+			println '========'
+		}
 	endsubmit;
 quit;
