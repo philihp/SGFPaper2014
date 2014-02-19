@@ -1,0 +1,5 @@
+%let token1=CAACEdEose0cBADPBAiV2CT9abQonF9itxqBgCYXzke66XaXJnRrzVKCruINZAqZAsCHxzCBZBnx;
+%let token2=LCclEjMcCn1K2pnPDAInXN9J1vlZBwcm6FCFJK3Ew3cAlRcvXrZASi3A18qRzohwhPga3TYE9ugr;
+%let token3=5t7vjJQqd2jxstkUppqr05kBteRFRd2HIHRedGXSX8qE1a0DiZBqwZDZD;
+%let token=&token1.&token2.&token3;
+
