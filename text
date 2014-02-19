@@ -3,3 +3,11 @@
 Facebook Graph API requires HTTPS, so you'll need SAS/Secure for SSL connections
 over HTTPS. This is a Facebook security requirement.
 
+
+3 ways of connecting:
+
+Python script to CSV
+
+Manually parse with SAS
+
+Proc HTTP & Proc Groovy
