@@ -1,0 +1,5 @@
+
+
+Facebook Graph API requires HTTPS, so you'll need SAS/Secure for SSL connections
+over HTTPS. This is a Facebook security requirement.
+
