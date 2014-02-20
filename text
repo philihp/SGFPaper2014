@@ -3,6 +3,8 @@
 Facebook Graph API requires HTTPS, so you'll need SAS/Secure for SSL connections
 over HTTPS. This is a Facebook security requirement.
 
+===Note about Paths===
+The paths listed are intended to work on Linux, and on Ubuntu 13.10, installing groovy with sudo apt-get install groovy will install 1.8.6 into the stated path. If you are on windows, if you put the groovy-all.1.8.6 file at the path "C:\usr\share\groovy\lib\", SAS on Windows will find it. Similarly, you will need to have a folder "C:\tmp\" in order to store intermediate files. As long as these two things exist, the code will work cross-platform.
 
 3 ways of connecting:
 

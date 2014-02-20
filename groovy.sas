@@ -33,6 +33,7 @@ proc http
 ;
 run;
 proc groovy;
+  /* http://repository.codehaus.org/org/codehaus/groovy/groovy-all/1.8.6/ */
   add classpath="/usr/share/groovy/lib/groovy-1.8.6.jar";
   exec "json2csv.groovy";
 quit;
@@ -40,17 +41,6 @@ quit;
 %mend;
 
 %let topull=https://graph.facebook.com/11803542/statuses;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
-%pullpage;
 %pullpage;
 data statuses;
     infile csv missover dsd firstobs=2 ;
