@@ -1,3 +1,6 @@
+dm 'expl';
+
+
 %include token;
 /* http://blogs.sas.com/content/sascom/2013/12/12/how-to-import-twitter-tweets-in-sas-data-step-using-oauth-2-authentication-style/ */
 
@@ -15,7 +18,6 @@ data _null_;
 run;
 
 filename headers '/tmp/headers.txt';
-
 filename out "/tmp/http.json";
 data _null_;
   file headers;
@@ -39,9 +41,14 @@ proc groovy;
 quit;
 %end;
 %mend;
-
+%macro puller();
 %let topull=https://graph.facebook.com/11803542/statuses;
-%pullpage;
+%do %while(%length(&topull) ^= 0);
+  %pullpage;
+%end;
+%mend;
+%puller;
+
 data statuses;
     infile csv missover dsd firstobs=2 ;
     informat id $50. updated_str $24. message $400.;
