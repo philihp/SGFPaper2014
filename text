@@ -1,7 +1,46 @@
+SAS379
+
+Three Different Ways to Import JSON from the Facebook Graph API
+
+Abstract
+========
+
+HTML5 has become the de facto standard for web applications. As a result, the lingua franca object notation of the web services that the web applications call has switched from XML to JSON. JSON is remarkably easy to parse in JavaScript, but so far SAS doesn't have any native JSON parsers. The Facebook Graph API dropped XML support a few years ago. This paper shows how we can parse the JSON in SAS by calling an external script, using PROC GROOVY to parse it inside of SAS, or by parsing the JSON manually with a DATA step. We'll extract the data from the Facebook Graph API and import it into an OLAP data mart to report and analyze a marketing campaign's effectiveness.
+
+Introduction
+============
+
+The Facebook Graph API offers a very rich interface for extracting marketing data, however pulling this data into SAS requires a little bit of work. We've got go go over SSL, obtain an OAuth access token, and use that to query JSON data from REST URLs. 
+
+SSL Security
+------------
+
+SSL encrypts communication between the client (your SAS session) and the server (Facebook's servers). This is a Facebook requirement, which prevents session tokens from being hijacked when used on public Wifi networks, which was common before it was implemented (http://www.nytimes.com/2011/02/17/technology/personaltech/17basics.html). SAS requires SAS/Secure in order to use SSL, and once installed and configured, should appear no different from plain HTTP.
+
+SSL makes use of public/private key cryptography in order to validate the source of transmissions. Server SSL certificates are signed by certificate authorities (CAs). Trusted root CA certificates are usually on your machine, and are used to validate these signatures and build a web of trust between the client and server; Usually this is setup by default, but if SAS can't find the specific certificate your server is signed with, you'll need to tell it where these exist. You can do this by adding this line to your sasv9.cfg file, with the appropriate path:
+
+    -SSLCALISTLOC="/etc/ssl/certs/ca-certificates.crt"
+
+OAuth Token
+-----------
+
+Once we can talk to the Facebook server, we'll need an auth token. This token will be passed in to the server with every request that tells Facebook that
+
+ A: We are the app
+ B: We have access to the data we are querying
+
+Getting a token is normally an interactive process requiring the user to actively authorize our app. It is described on the Facebook API's documentation (https://developers.facebook.com/docs/facebook-login/access-tokens), and is beyond the scope of this paper. Facebook offers a Graph API Explorer tool (https://developers.facebook.com/tools/explorer/), which we can use to get an auth_token for us.
+
+[Screenshot of Graph Explorer, and where to get the token]
+
+For now we'll use that to get an access_token, and then go over how to get one programmatically later.
+
+Querying Facebook
+=================
+
+The Facebook Graph API is a REST interface, so querying it is as simple as making HTTPS GET requests, and reading JSON data from it.
 
 
-Facebook Graph API requires HTTPS, so you'll need SAS/Secure for SSL connections
-over HTTPS. This is a Facebook security requirement.
 
 ===Note about Paths===
 The paths listed are intended to work on Linux, and on Ubuntu 13.10, installing groovy with sudo apt-get install groovy will install 1.8.6 into the stated path. If you are on windows, if you put the groovy-all.1.8.6 file at the path "C:\usr\share\groovy\lib\", SAS on Windows will find it. Similarly, you will need to have a folder "C:\tmp\" in order to store intermediate files. As long as these two things exist, the code will work cross-platform.
@@ -13,3 +52,15 @@ Python script to CSV
 Manually parse with SAS
 
 Proc HTTP & Proc Groovy
+
+Conclusion
+==========
+
+References
+==========
+
+Contact Information
+===================
+
+Your questions and comments are valued and encouraged. Please don't hesitate to contact the author
+at philihp.busby@sas.com

@@ -11,8 +11,10 @@ if(json.data.size > 0) {
 	}
 
 	next = json.paging.next.replaceAll('&','%str(&)');
+println "NEXT: "+next
 	exports.put('topull',next)
 }
 else {
+println "NO NEXT FOUND"
 	exports.put('topull','')
 }

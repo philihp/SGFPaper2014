@@ -1,5 +1,3 @@
-dm 'expl';
-
 
 %include token;
 /* http://blogs.sas.com/content/sascom/2013/12/12/how-to-import-twitter-tweets-in-sas-data-step-using-oauth-2-authentication-style/ */
