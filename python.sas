@@ -1,5 +1,6 @@
 
-filename csv 'python pullcsv.py';
+x 'python facepull.py';
+filename csv '/tmp/python.csv';
 
 data friends;
     infile csv missover dsd firstobs=2 ;

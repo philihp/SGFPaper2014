@@ -38,26 +38,97 @@ For now we'll use that to get an access_token, and then go over how to get one p
 Querying Facebook
 =================
 
-The Facebook Graph API is a REST interface, so querying it is as simple as making HTTPS GET requests, and reading JSON data from it.
-
+The Facebook Graph API is a REST interface, so querying it is as simple as making HTTPS GET requests, and reading JSON data from it. The format of the page is typically limited to only a window of the available records in a collection, however the next page of the data is available at the end of the request.
 
 
 ===Note about Paths===
 The paths listed are intended to work on Linux, and on Ubuntu 13.10, installing groovy with sudo apt-get install groovy will install 1.8.6 into the stated path. If you are on windows, if you put the groovy-all.1.8.6 file at the path "C:\usr\share\groovy\lib\", SAS on Windows will find it. Similarly, you will need to have a folder "C:\tmp\" in order to store intermediate files. As long as these two things exist, the code will work cross-platform.
 
-3 ways of connecting:
+Method 1: Proc HTTP & Proc Groovy
+=================================
 
-Python script to CSV
+The first method, which parses the JSON using Groovy, was explored on Jiangtang Hu's blog[1]. First, we will need an access_token, as described above. It should look something like this:
 
-Manually parse with SAS
+token.sas
+	%let token=CAACEdEosGOATaltLbHZA5Le2afZAnWDyg1letNLQ7ITsCi5nvzgxSIenOMtr6GJOrYu0ZCNms0rlkFdA6QYx20QfQslFR0C3OjKDI5Iexxx6YuZBZBbjgQ47vqEDBniTM1NozAIb2F43G15VVtXzuXQ8p3ZB1ZB5vIHAzWwERWcTt0LkZANss1O4LbueWgnOdftXWWnZCAq6QmAZDZD;
 
-Proc HTTP & Proc Groovy
+Then, in the following file we include that and make an HTTP call to Facebook's API. With every response, we parse it and check to see if there's an additional page of data. If there is, we loop back around and pull that in as well. All of this is saved to a CSV file, which in the final step is imported into a SAS dataset.
+
+main.sas
+	
+	%include token;
+	data _null_;
+	  fname='fh';
+	  rc=filename(fname,'/tmp/groovy.csv');
+	  if(rc=0 and fexist(fname)) then
+	    rc=fdelete(fname);
+	  rc=filename(fname);
+	run;
+	filename csv '/tmp/groovy.csv';
+	data _null_;
+	  file csv;
+	  put 'id,updated_time,message';
+	run;
+
+	filename headers '/tmp/headers.txt';
+	filename out "/tmp/http.json";
+	data _null_;
+	  file headers;
+	  put "Authorization: OAuth &token";
+	run;
+
+	%macro pullpage();
+	%put TOPULL=&topull;
+	%if %length(&topull) ^= 0 %then %do;
+	proc http
+	  method="get"
+	  headerin=headers
+	  url="&topull."
+	  out=out
+	;
+	run;
+	proc groovy;
+	  /* http://repository.codehaus.org/org/codehaus/groovy/groovy-all/1.8.6/ */
+	  add classpath="/usr/share/groovy/lib/groovy-1.8.6.jar";
+	  exec "json2csv.groovy";
+	quit;
+	%end;
+	%mend;
+	%macro puller();
+	%let topull=https://graph.facebook.com/11803542/statuses;
+	%do %while(%length(&topull) ^= 0);
+	  %pullpage;
+	%end;
+	%mend;
+	%puller;
+
+	data statuses;
+	    infile csv missover dsd firstobs=2 ;
+	    informat id $50. updated_str $24. message $400.;
+	    input id $ updated_str $ message $;
+	    updated_time = input(substr(updated_str,1,22)||':'||substr(updated_str,23), e8601dz.);
+	    format updated_time datetime20.;
+	    drop updated_str;
+	run;
+
+There is a weakness with this method, though. The auth_token tends to expire after only a few hours, and requires us to manually get a new one from the Graph Explorer tool. Falko Schulz later showed how we can use Proc HTTP to make an OAuth call to Twitter to grok their JSON data[2], which we gloss over in this example, however doing so through SAS is not possible because of a difference in the Facebook API implementation. When we initially request an auth token, a "code" parameter is sent in an HTTP Location redirect, which needs to be used in a second call back to to the Facebook API. Currently SAS's Proc HTTP automatically follows that Location redirect, but we need to access that parameter.
+
+If we only need to run this extract once, getting an auth_token once is fine. If we need code that runs in batch without any interaction, we'll have to go outside of SAS.
+
+Method 2: Python script to CSV
+==============================
+
+
+Pipe directly from a Python script
 
 Conclusion
 ==========
 
 References
 ==========
+
+[1] http://www.jiangtanghu.com/blog/2012/10/28/hello-groovy-in-sas-9-3/
+[2] http://blogs.sas.com/content/sascom/2013/12/12/how-to-import-twitter-tweets-in-sas-data-step-using-oauth-2-authentication-style/
 
 Contact Information
 ===================
