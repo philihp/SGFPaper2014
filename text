@@ -50,11 +50,35 @@ Method 1: Proc HTTP & Proc Groovy
 The first method, which parses the JSON using Groovy, was explored on Jiangtang Hu's blog[1]. First, we will need an access_token, as described above. It should look something like this:
 
 token.sas
+
 	%let token=CAACEdEosGOATaltLbHZA5Le2afZAnWDyg1letNLQ7ITsCi5nvzgxSIenOMtr6GJOrYu0ZCNms0rlkFdA6QYx20QfQslFR0C3OjKDI5Iexxx6YuZBZBbjgQ47vqEDBniTM1NozAIb2F43G15VVtXzuXQ8p3ZB1ZB5vIHAzWwERWcTt0LkZANss1O4LbueWgnOdftXWWnZCAq6QmAZDZD;
+
+The following groovy code could be kept inline with SAS code, but this tends to confuse text editor code highlighters. Keeping it in a separate file alleviates this. Notice how it stores the next page in the "exports" map. This is a reserved map for SAS, and all values saved to it will be accessible as macro variables by SAS after the code executes.
+
+json2csv.groovy
+
+	import groovy.json.*
+	def input=new File('/tmp/http.json').text
+	def json=new JsonSlurper().parseText(input)
+
+	if(json.data.size > 0) {
+
+		def output=new File('/tmp/groovy.csv')
+		json.data.each {
+			def row = [it.id, it.updated_time, '"'+it.message.replaceAll('"','""').replaceAll('\n',' ')+'"' ]
+			output.append row.join(',') + '\n'
+		}
+
+		next = json.paging.next.replaceAll('&','%str(&)');
+		exports.put('topull',next)
+	}
+	else {
+		exports.put('topull','')
+	}
 
 Then, in the following file we include that and make an HTTP call to Facebook's API. With every response, we parse it and check to see if there's an additional page of data. If there is, we loop back around and pull that in as well. All of this is saved to a CSV file, which in the final step is imported into a SAS dataset.
 
-main.sas
+groovy.sas
 	
 	%include token;
 	data _null_;
@@ -111,18 +135,64 @@ main.sas
 	    drop updated_str;
 	run;
 
-There is a weakness with this method, though. The auth_token tends to expire after only a few hours, and requires us to manually get a new one from the Graph Explorer tool. Falko Schulz later showed how we can use Proc HTTP to make an OAuth call to Twitter to grok their JSON data[2], which we gloss over in this example, however doing so through SAS is not possible because of a difference in the Facebook API implementation. When we initially request an auth token, a "code" parameter is sent in an HTTP Location redirect, which needs to be used in a second call back to to the Facebook API. Currently SAS's Proc HTTP automatically follows that Location redirect, but we need to access that parameter.
-
-If we only need to run this extract once, getting an auth_token once is fine. If we need code that runs in batch without any interaction, we'll have to go outside of SAS.
+There is a weakness with this method, though. The auth_token tends to expire after only a few hours, and requires us to manually get a new one from the Graph Explorer tool. Falko Schulz later showed how we can use Proc HTTP to make an OAuth call to Twitter to grok their JSON data[2], which we gloss over in this example, however doing so through SAS is not possible because of a difference in the Facebook API implementation.
 
 Method 2: Python script to CSV
 ==============================
 
+Another option is to push all of the HTTP and parsing completely out of SAS. The following example does this using Python and the pyFaceGraph package[3]. As you can see it's much shorter than the above, and this script, however this script doesn't bother to handle repeated calls.
 
-Pipe directly from a Python script
+callfacebook.py
+
+	import csv
+	from pprint import pprint
+	from facegraph import Graph
+	g = Graph("CAACEdEosGOATaltLbHZA5Le2afZAnWDyg1letNLQ7ITsCi5nvzgxSIenOMtr6GJOrYu0ZCNms0rlkFdA6QYx20QfQslFR0C3OjKDI5Iexxx6YuZBZBbjgQ47vqEDBniTM1NozAIb2F43G15VVtXzuXQ8p3ZB1ZB5vIHAzWwERWcTt0LkZANss1O4LbueWgnOdftXWWnZCAq6QmAZDZD")
+
+	with open('/tmp/python.csv', 'wb') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_MINIMAL)
+		for friend in g.me.friends().data:
+			writer.writerow([friend[k].encode('utf-8') for k in friend])
+
+python.sas
+
+	x 'python callfacebook.py';
+	filename csv '/tmp/python.csv';
+	data friends;
+		infile csv missover dsd;
+		informat name $200. id $25.;
+		input name $ id $;
+	run;
+
+
+Method 3: Pipe directly from a command
+======================================
+
+This can be shortened further, to where our Python directly outputs CSV to SAS using a filename pipe. While this is similar to the second method, it eliminates an intermediate step of putting a file on the system.
+
+pullcsv.py
+
+	import csv
+	from pprint import pprint
+	from facegraph import Graph
+	g = Graph("CAACEdEose0cBACwgvcBpIBgKGbS6QCasHRzxwi8ONKnNtFP4Mj14OtdyXpoYRn9fTsZB1tasvpy80XcEpPtILS4epJkX4NvVMlHVSSSskzn7dZBtrLIdXZASksZCyFrcuzbgFwgTZBFxNuFtTZBIGZAuVc5qzSzXsOZCxkHeqspUK0dKaKBko38OMWAT9sRkNZBzuhKy37dpNswZDZD")
+
+	for friend in g.me.friends().data:
+		print ','.join([friend[k].encode('utf-8') for k in friend])
+
+piped.sas
+
+	filename csv pipe 'python pullcsv.py';
+	data friends;
+		infile csv missover dsd;
+		informat id $50. name $100.;
+		input name $ id $;
+	run;
 
 Conclusion
 ==========
+
+Presented here are three distinct methods of pulling in data from the Facebook Graph API. Unfortunately this can't be completely automated because of Facebook's OAuth implementation, and an access token needs to be generated before the code will run. Natively, SAS doesn't currently include anything to parse JSON, so the parsing needs to be done in another language, either in Groovy or Python or the language of your choice.
 
 References
 ==========
